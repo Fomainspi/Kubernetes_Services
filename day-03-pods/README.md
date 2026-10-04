@@ -1,62 +1,78 @@
-# Day 03 — Pods 🟦
+# Day 03 — Pods
 
 ## Definition
 
-A **Pod** is Kubernetes' smallest deployable unit. It represents one or more containers that are tightly coupled and share a network namespace and volumes.
+A Pod is the smallest deployable unit in Kubernetes. It represents one or more containers that are scheduled together on the same Node.
 
-```mermaid
-flowchart TB
-    P[Pod]
-    P --> C1[Application container]
-    P --> C2[Optional sidecar]
-    P --> N[Shared network namespace]
-    P --> V[Shared volumes]
-```
+### Mental model
 
-## Example
+~~~text
+Node
+ |
+ +-- Pod
+      +-- Application container
+      +-- Optional sidecar
+      +-- Shared network namespace
+      +-- Shared volumes
+~~~
 
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: web
-  labels:
-    app: web
-spec:
-  containers:
-    - name: nginx
-      image: nginx:latest
-      ports:
-        - containerPort: 80
-```
+Containers in the same Pod share the Pod network namespace and can communicate through localhost. Pods are normally ephemeral and are created by controllers such as Deployments, StatefulSets, DaemonSets, and Jobs.
 
-## Lifecycle
+## Pod lifecycle
 
-Typical phases include `Pending`, `Running`, `Succeeded`, `Failed`, and `Unknown`.
+~~~text
+Pending -> Running -> Succeeded
+              |
+              +----> Failed
+~~~
 
-## Labs
+## Lab 1 — Create a Pod
 
-```bash
-kubectl apply -f pod.yaml
-kubectl get pod web -o wide
-kubectl describe pod web
-kubectl logs web
-kubectl exec -it web -- sh
-kubectl delete pod web
-```
+~~~bash
+kubectl run nginx-pod --image=nginx
+kubectl get pods
+kubectl get pod nginx-pod -o wide
+kubectl describe pod nginx-pod
+~~~
 
-For multi-container Pods:
+## Lab 2 — Access the application
 
-```bash
-kubectl logs <pod> -c <container>
-kubectl exec -it <pod> -c <container> -- sh
-```
+~~~bash
+kubectl port-forward pod/nginx-pod 8080:80
+~~~
+
+Open http://localhost:8080.
+
+## Lab 3 — Execute commands
+
+~~~bash
+kubectl exec -it nginx-pod -- /bin/bash
+hostname
+cat /etc/os-release
+exit
+~~~
+
+## Lab 4 — Logs
+
+~~~bash
+kubectl logs nginx-pod
+kubectl logs -f nginx-pod
+~~~
 
 ## Troubleshooting
 
-```bash
+~~~bash
 kubectl get pod
-kubectl describe pod <name>
+kubectl describe pod nginx-pod
+kubectl logs nginx-pod
+kubectl logs nginx-pod --previous
 kubectl get events --sort-by=.lastTimestamp
-kubectl logs <name> --all-containers
-```
+~~~
+
+### Challenge
+
+Create an NGINX Pod, access it with port-forwarding, inspect its IP and Node, view its logs, delete it, and explain why it does not automatically come back.
+
+## Key takeaway
+
+Pods run containers. Controllers normally create and replace Pods so applications remain at the desired state.
