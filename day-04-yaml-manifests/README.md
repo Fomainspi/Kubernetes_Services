@@ -1,28 +1,44 @@
-# Day 04 — YAML & Kubernetes Manifests 📄
+# Day 04 — YAML & Kubernetes Manifests
 
 ## Definition
 
-A **manifest** is a YAML or JSON representation of a Kubernetes API object.
+A Kubernetes manifest is a YAML or JSON description of the desired state of an object.
 
-The four fields you will constantly see are:
+The four fields you must recognize are:
 
-```yaml
-apiVersion:
-kind:
+~~~yaml
+apiVersion: apps/v1
+kind: Deployment
 metadata:
+  name: web
 spec:
-```
+  replicas: 3
+~~~
 
-| Field | Definition |
+| Field | Meaning |
 |---|---|
 | apiVersion | API group and version |
-| kind | Type of resource |
-| metadata | Identity, labels, namespace, annotations |
+| kind | Kubernetes object type |
+| metadata | Name, namespace, labels, annotations |
 | spec | Desired configuration |
 
-## Example
+## Declarative model
 
-```yaml
+~~~text
+You declare desired state
+        |
+        v
+Kubernetes controllers
+        |
+        v
+Actual cluster state
+~~~
+
+## Lab — Deployment manifest
+
+Create deployment.yaml:
+
+~~~yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,19 +55,57 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:latest
-```
+          image: nginx:1.27
+          ports:
+            - containerPort: 80
+~~~
 
-## Labs
+Apply:
 
-```bash
+~~~bash
 kubectl apply -f deployment.yaml
-kubectl get deployment web -o yaml
+kubectl get deployment
+kubectl get pods
+~~~
+
+## Inspect the API schema
+
+~~~bash
+kubectl explain deployment
 kubectl explain deployment.spec
-kubectl explain pod.spec.containers
+kubectl explain deployment.spec.template.spec.containers
+~~~
+
+## Validate
+
+~~~bash
 kubectl diff -f deployment.yaml
-```
+kubectl apply --dry-run=client -f deployment.yaml
+~~~
+
+## Lab — Modify
+
+Change replicas from 3 to 5, then:
+
+~~~bash
+kubectl apply -f deployment.yaml
+kubectl get pods
+~~~
+
+## Common mistakes
+
+- Incorrect indentation
+- Wrong apiVersion
+- Wrong kind
+- Selector does not match labels
+- Invalid field names
+- Incorrect image
+- Missing required fields
 
 ### Challenge
 
-Modify the manifest to run 5 replicas, add an environment variable, add a label, and expose container port 80.
+Create a Deployment with three replicas and a Service. Change the image version and observe the rollout.
+
+## Key takeaway
+
+YAML describes desired state. Kubernetes continuously works toward that state.
